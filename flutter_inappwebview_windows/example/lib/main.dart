@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview_platform_interface/flutter_inappwebview_platform_interface.dart';
@@ -292,7 +294,7 @@ class _MyAppState extends State<MyApp> {
                           webViewController = controller;
                           controller.loadUrl(
                             urlRequest: URLRequest(
-                              url: WebUri('https://flutter.dev'),
+                              url: WebUri('https://192.168.1.207:4433/'),
                             ),
                           );
                           final canPost = controller.isMethodSupported(
@@ -306,6 +308,20 @@ class _MyAppState extends State<MyApp> {
                             canPostWebMessage = canPost;
                             canAddWebMessageListener = canAddListener;
                           });
+                        },
+                        onReceivedServerTrustAuthRequest: (controller, challenge) async {
+                          return ServerTrustAuthResponse(
+                            action: ServerTrustAuthResponseAction.PROCEED,
+                          );
+                        },
+                        onReceivedClientCertRequest: (controller, challenge) async {
+                          return ClientCertResponse(
+                            selectedCertificate: 0,
+                            certificatePath: "test_assets/certificate.pfx",
+                            certificatePassword: "password",
+                            keyStoreType: "PKCS12",
+                            action: ClientCertResponseAction.PROCEED,
+                          );
                         },
                         onLoadStart: (controller, url) {
                           debugPrint('Page started loading: $url');
@@ -322,44 +338,44 @@ class _MyAppState extends State<MyApp> {
                           });
 
                           // Inject JavaScript to test Web Notifications API
-                          await controller.evaluateJavascript(source: '''
-                            (function() {
-                              // Check if notifications are supported
-                              if (!('Notification' in window)) {
-                                console.log('Notifications not supported');
-                                return;
-                              }
+                          // await controller.evaluateJavascript(source: '''
+                          //   (function() {
+                          //     // Check if notifications are supported
+                          //     if (!('Notification' in window)) {
+                          //       console.log('Notifications not supported');
+                          //       return;
+                          //     }
                               
-                              console.log('Current Notification permission: ' + Notification.permission);
+                          //     console.log('Current Notification permission: ' + Notification.permission);
                               
-                              // Request notification permission and create a test notification
-                              Notification.requestPermission().then(function(permission) {
-                                console.log('Notification permission result: ' + permission);
-                                if (permission === 'granted') {
-                                  // Create a notification
-                                  var notification = new Notification('Test Notification from WebView', {
-                                    body: 'This notification was triggered from JavaScript!',
-                                    icon: 'https://flutter.dev/favicon.ico',
-                                    tag: 'test-notification-1'
-                                  });
+                          //     // Request notification permission and create a test notification
+                          //     Notification.requestPermission().then(function(permission) {
+                          //       console.log('Notification permission result: ' + permission);
+                          //       if (permission === 'granted') {
+                          //         // Create a notification
+                          //         var notification = new Notification('Test Notification from WebView', {
+                          //           body: 'This notification was triggered from JavaScript!',
+                          //           icon: 'https://flutter.dev/favicon.ico',
+                          //           tag: 'test-notification-1'
+                          //         });
                                   
-                                  notification.onclick = function() {
-                                    console.log('Notification clicked!');
-                                  };
+                          //         notification.onclick = function() {
+                          //           console.log('Notification clicked!');
+                          //         };
                                   
-                                  notification.onclose = function() {
-                                    console.log('Notification closed!');
-                                  };
+                          //         notification.onclose = function() {
+                          //           console.log('Notification closed!');
+                          //         };
                                   
-                                  console.log('Notification created successfully');
-                                }
-                              });
-                            })();
-                          ''');
-                          debugPrint('Notification JavaScript injected');
+                          //         console.log('Notification created successfully');
+                          //       }
+                          //     });
+                          //   })();
+                          // ''');
+                          // debugPrint('Notification JavaScript injected');
 
-                          debugPrint('Test print page silently');
-                          _printPage(showUI: false);
+                          // debugPrint('Test print page silently');
+                          // _printPage(showUI: false);
                         },
                         onPermissionRequest: (controller, permissionRequest) {
                           debugPrint(

@@ -41,6 +41,7 @@ void loadData() {
         <meta http-equiv="X-UA-Compatible" content="ie=edge">
         <link rel="stylesheet" href="https://getbootstrap.com/docs/4.3/dist/css/bootstrap.min.css">
         <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+        <title>loadDataTest</title>
     </head>
     <body>
       <img src="https://via.placeholder.com/100x50" alt="placeholder 100x50">
@@ -61,7 +62,15 @@ void loadData() {
     final String? currentUrl = (await controller.getUrl())?.toString();
 
     if (!kIsWeb) {
-      expect(currentUrl, TEST_CROSS_PLATFORM_URL_1.toString());
+      if (defaultTargetPlatform == TargetPlatform.windows) {
+        // Windows does not support the historyUrl and baseUrl parameters of loadData.
+        expect(currentUrl, 'about:blank');
+        // check if the content is loaded by checking the title.
+        final title = await controller.getTitle();
+        expect(title, 'loadDataTest');
+      } else {
+        expect(currentUrl, TEST_CROSS_PLATFORM_URL_1.toString());
+      }
     } else {
       expect(currentUrl, 'data:$mimeType,' + Uri.encodeComponent(data));
     }

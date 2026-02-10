@@ -28,17 +28,15 @@ void userScripts() {
                 contentWorld: ContentWorld.PAGE,
               ),
               UserScript(
-                source: "var bar = 2;",
+                source: "window.bar = 2;",
                 injectionTime: UserScriptInjectionTime.AT_DOCUMENT_END,
-                forMainFrameOnly:
-                    defaultTargetPlatform != TargetPlatform.android,
+                forMainFrameOnly: true,
                 contentWorld: ContentWorld.DEFAULT_CLIENT,
               ),
               UserScript(
-                source: "var bar2 = 12;",
+                source: "window.bar2 = 12;",
                 injectionTime: UserScriptInjectionTime.AT_DOCUMENT_END,
-                forMainFrameOnly:
-                    defaultTargetPlatform != TargetPlatform.android,
+                forMainFrameOnly: true,
                 contentWorld: ContentWorld.world(name: "test"),
               ),
             ]),

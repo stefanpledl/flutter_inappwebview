@@ -44,7 +44,14 @@ void onPermissionRequest() {
     await tester.pump();
 
     await controller.evaluateJavascript(
-      source: "document.querySelector('#camera').click();",
+      source: """navigator.mediaDevices.enumerateDevices().then((devices) => {
+        const cameraDevices = devices.filter(device => device.kind === 'videoinput');
+        if (cameraDevices.length > 0) {
+          document.querySelector('#camera').click();
+        } else {
+          document.querySelector('#microphone').click();
+        }
+      });""",
     );
     final List<PermissionResourceType> resources =
         await onPermissionRequestCompleter.future;

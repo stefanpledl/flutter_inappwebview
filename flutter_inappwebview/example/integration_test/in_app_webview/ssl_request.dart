@@ -5,6 +5,7 @@ void sslRequest() {
     PlatformWebViewCreationParamsProperty.onReceivedServerTrustAuthRequest,
   );
 
+  // On Windows, you must install the certificate in the windows certificate trust store to make this test work.
   skippableTestWidgets('SSL request', (WidgetTester tester) async {
     final Completer<InAppWebViewController> controllerCompleter =
         Completer<InAppWebViewController>();
@@ -24,12 +25,13 @@ void sslRequest() {
             pageLoaded.complete();
           },
           onReceivedServerTrustAuthRequest: (controller, challenge) async {
-            return new ServerTrustAuthResponse(
+            return ServerTrustAuthResponse(
               action: ServerTrustAuthResponseAction.PROCEED,
             );
           },
           onReceivedClientCertRequest: (controller, challenge) async {
-            return new ClientCertResponse(
+            return ClientCertResponse(
+              selectedCertificate: 0,
               certificatePath: "test_assets/certificate.pfx",
               certificatePassword: "password",
               keyStoreType: "PKCS12",

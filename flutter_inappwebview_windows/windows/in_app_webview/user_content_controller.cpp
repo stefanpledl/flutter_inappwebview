@@ -37,11 +37,20 @@ namespace flutter_inappwebview_plugin
               nlohmann::json auxData = context["auxData"];
               auto isDefault = auxData["isDefault"].get<bool>();
               auto frameId = auxData["frameId"].get<std::string>();
-              if (string_equals(webView_->pageFrameId(), frameId)) {
-                if (isDefault) {
+              auto pageFrameId = webView_->pageFrameId();
+              
+              // For default (page) world, require frameId match
+              if (isDefault) {
+                if (string_equals(pageFrameId, frameId)) {
                   contentWorlds_.insert_or_assign(ContentWorld::page()->name, id);
                 }
-                else {
+              }
+              else {
+                // For isolated worlds, track if either:
+                // 1. Frame ID matches (normal case)
+                // 2. pageFrameId_ is not set yet (handles race condition where 
+                //    Page.getFrameTree callback hasn't completed)
+                if (string_equals(pageFrameId, frameId) || pageFrameId.empty()) {
                   contentWorlds_.insert_or_assign(name, id);
                   addPluginScriptsIfRequired(std::make_shared<ContentWorld>(name));
                 }
@@ -316,10 +325,16 @@ namespace flutter_inappwebview_plugin
       auto hr = webView_->webView->CallDevToolsProtocolMethod(L"Page.createIsolatedWorld", utf8_to_wide(parameters.dump()).c_str(), Callback<ICoreWebView2CallDevToolsProtocolMethodCompletedHandler>(
         [this, completionHandler, worldName](HRESULT errorCode, LPCWSTR returnObjectAsJson)
         {
-          if (succeededOrLog(errorCode) && completionHandler) {
+          if (succeededOrLog(errorCode)) {
             auto id = nlohmann::json::parse(wide_to_utf8(returnObjectAsJson))["executionContextId"].get<int>();
+            contentWorlds_.insert_or_assign(worldName, id);
             addPluginScriptsIfRequired(std::make_shared<ContentWorld>(worldName));
-            completionHandler(id);
+            if (completionHandler) {
+              completionHandler(id);
+            }
+          }
+          else if (completionHandler) {
+            completionHandler(-1);
           }
           return S_OK;
         }

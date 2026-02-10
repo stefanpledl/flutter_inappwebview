@@ -196,6 +196,7 @@ namespace flutter_inappwebview_plugin
     void clearSslPreferences(const std::function<void()> completionHandler) const;
     bool isInterfaceSupported(const std::string& interfaceName) const;
     double getZoomScale() const;
+    void zoomBy(const double& zoomFactor);
     int64_t getProgress() const;
     void scrollTo(const int64_t& x, const int64_t& y, const bool& animated) const;
     void scrollBy(const int64_t& x, const int64_t& y, const bool& animated) const;
@@ -215,7 +216,8 @@ namespace flutter_inappwebview_plugin
     WebMessageChannel* getWebMessageChannel(const std::string& channelId) const;
     void postWebMessage(const std::string& messageData,
       const std::string& targetOrigin,
-      int64_t messageType);
+      int64_t messageType,
+      const std::optional<std::vector<flutter::EncodableMap>>& ports = std::nullopt);
     void setWebMessageCallback(const std::string& channelId, int portIndex);
     void postWebMessageOnPort(const std::string& channelId, int portIndex,
       const std::string& messageData, int64_t messageType);

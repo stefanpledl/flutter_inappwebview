@@ -180,6 +180,18 @@ namespace flutter_inappwebview_plugin
       webView->loadData(data);
       result->Success(true);
     }
+    else if (string_equals(methodName, "postUrl")) {
+      auto url = get_fl_map_value<std::string>(arguments, "url");
+      auto postData = get_fl_map_value<std::vector<uint8_t>>(arguments, "postData");
+      auto urlRequest = std::make_unique<URLRequest>(
+        url,
+        "POST",
+        std::nullopt,
+        postData
+      );
+      webView->loadUrl(std::move(urlRequest));
+      result->Success(true);
+    }
     else if (string_equals(methodName, "reload")) {
       webView->reload();
       result->Success(true);
@@ -318,7 +330,26 @@ namespace flutter_inappwebview_plugin
         }
       }
 
-      webView->postWebMessage(messageData, targetOrigin, messageType);
+      std::optional<std::vector<flutter::EncodableMap>> ports = std::nullopt;
+      if (fl_map_contains_not_null(messageValue, "ports")) {
+        const auto& portsValue = messageValue.at(make_fl_value("ports"));
+        if (std::holds_alternative<flutter::EncodableList>(portsValue)) {
+          const auto& portsList = std::get<flutter::EncodableList>(portsValue);
+          if (!portsList.empty()) {
+            std::vector<flutter::EncodableMap> portsVec;
+            for (const auto& portValue : portsList) {
+              if (std::holds_alternative<flutter::EncodableMap>(portValue)) {
+                portsVec.push_back(std::get<flutter::EncodableMap>(portValue));
+              }
+            }
+            if (!portsVec.empty()) {
+              ports = std::move(portsVec);
+            }
+          }
+        }
+      }
+
+      webView->postWebMessage(messageData, targetOrigin, messageType, ports);
       result->Success(true);
     }
     else if (string_equals(methodName, "takeScreenshot")) {
@@ -408,6 +439,11 @@ namespace flutter_inappwebview_plugin
     }
     else if (string_equals(methodName, "getZoomScale")) {
       result->Success(webView->getZoomScale());
+    }
+    else if (string_equals(methodName, "zoomBy")) {
+      auto zoomFactor = get_fl_map_value<double>(arguments, "zoomFactor");
+      webView->zoomBy(zoomFactor);
+      result->Success(true);
     }
     else if (string_equals(methodName, "getProgress")) {
       result->Success(webView->getProgress());

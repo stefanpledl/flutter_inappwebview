@@ -39,6 +39,10 @@ void programmaticZoomScale() {
       expect(await controller.zoomOut(), true);
     }, skip: shouldSkipTest1);
 
+    final shouldSkipTest2 = !InAppWebView.isPropertySupported(
+      PlatformWebViewCreationParamsProperty.onZoomScaleChanged,
+    );
+
     skippableTestWidgets('onZoomScaleChanged', (WidgetTester tester) async {
       final Completer<InAppWebViewController> controllerCompleter =
           Completer<InAppWebViewController>();
@@ -78,7 +82,11 @@ void programmaticZoomScale() {
       await controller.zoomBy(zoomFactor: 2);
 
       await expectLater(onZoomScaleChangedCompleter.future, completes);
-    });
+    }, skip: shouldSkipTest2);
+
+    final shouldSkipTest3 = !InAppWebViewController.isMethodSupported(
+      PlatformInAppWebViewControllerMethod.zoomBy,
+    );
 
     skippableTestWidgets('zoomBy', (WidgetTester tester) async {
       final Completer<InAppWebViewController> controllerCompleter =
@@ -109,7 +117,11 @@ void programmaticZoomScale() {
         controller.zoomBy(zoomFactor: 3.0, animated: true),
         completes,
       );
-    });
+    }, skip: shouldSkipTest3);
+
+    final shouldSkipTest4 = !InAppWebViewController.isMethodSupported(
+      PlatformInAppWebViewControllerMethod.getZoomScale,
+    );
 
     skippableTestWidgets('getZoomScale', (WidgetTester tester) async {
       final Completer<InAppWebViewController> controllerCompleter =
@@ -139,6 +151,6 @@ void programmaticZoomScale() {
       final scale = await controller.getZoomScale();
       expect(scale, isNonZero);
       expect(scale, isPositive);
-    });
+    }, skip: shouldSkipTest4);
   }, skip: shouldSkip);
 }

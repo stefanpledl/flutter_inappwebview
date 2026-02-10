@@ -325,6 +325,8 @@ namespace flutter_inappwebview_plugin
       }
     ).Get()));
 
+    registerEventHandlers();
+
     if (userContentController) {
       if (javaScriptBridgeEnabled) {
         auto pluginScriptsOriginAllowList = settings->pluginScriptsOriginAllowList;
@@ -339,8 +341,6 @@ namespace flutter_inappwebview_plugin
         userContentController->addUserOnlyScripts(params.initialUserScripts.value());
       }
     }
-
-    registerEventHandlers();
   }
 
   void InAppWebView::registerEventHandlers()
@@ -837,7 +837,23 @@ namespace flutter_inappwebview_plugin
               }
 
               auto consoleArgs = consoleMessageJson.at("args").get<std::vector<nlohmann::json>>();
-              auto message = join(functional_map(consoleArgs, [](const nlohmann::json& json) { return json.contains("value") ? json.at("value").dump() : (json.contains("description") ? json.at("description").dump() : json.dump()); }), std::string{ " " });
+              auto message = join(functional_map(consoleArgs, [](const nlohmann::json& json) {
+                if (json.contains("value")) {
+                  const auto& val = json.at("value");
+                  if (val.is_string()) {
+                    return val.get<std::string>();
+                  }
+                  return val.dump();
+                }
+                if (json.contains("description")) {
+                  const auto& desc = json.at("description");
+                  if (desc.is_string()) {
+                    return desc.get<std::string>();
+                  }
+                  return desc.dump();
+                }
+                return json.dump();
+              }), std::string{ " " });
               channelDelegate->onConsoleMessage(message, messageLevel);
             }
 
@@ -1274,7 +1290,7 @@ namespace flutter_inappwebview_plugin
                 for (uint32_t i = 0; i < authoritiesCount; i++) {
                   wil::unique_cotaskmem_string authority;
                   if (succeededOrLog(authoritiesCollection->GetValueAtIndex(i, &authority))) {
-                    allowedCertificateAuthorities.push_back(base64_decode(wide_to_utf8(authority.get())));
+                    allowedCertificateAuthorities.push_back(wide_to_utf8(authority.get()));
                   }
                 }
               }
@@ -2608,7 +2624,8 @@ namespace flutter_inappwebview_plugin
 
   void InAppWebView::postWebMessage(const std::string& messageData,
     const std::string& targetOrigin,
-    int64_t messageType)
+    int64_t messageType,
+    const std::optional<std::vector<flutter::EncodableMap>>& ports)
   {
     if (!webView) return;
 
@@ -2632,7 +2649,35 @@ namespace flutter_inappwebview_plugin
       messageDataJs = "\"" + escaped + "\"";
     }
 
-    std::string js = WebMessageChannelJS::postWebMessageJs(messageDataJs, targetOrigin, "");
+    // Build portsJs string if ports are present, like iOS implementation
+    std::string portsJs = "";
+    if (ports.has_value() && !ports->empty()) {
+      std::vector<std::string> portArrayStrings;
+      for (const auto& portMap : ports.value()) {
+        auto webMessageChannelId = get_fl_map_value<std::string>(portMap, "webMessageChannelId", "");
+        auto portIndex = get_fl_map_value<int64_t>(portMap, "index", 0);
+        if (!webMessageChannelId.empty()) {
+          std::string portName = portIndex == 0 ? "port1" : "port2";
+          portArrayStrings.push_back(
+            WebMessageChannelJS::WEB_MESSAGE_CHANNELS_VARIABLE_NAME() +
+            "['" + webMessageChannelId + "']." + portName
+          );
+        }
+      }
+      if (!portArrayStrings.empty()) {
+        portsJs = "[";
+        for (size_t i = 0; i < portArrayStrings.size(); i++) {
+          if (i > 0) portsJs += ", ";
+          portsJs += portArrayStrings[i];
+        }
+        portsJs += "]";
+      }
+    }
+
+    debugLog("Posting web message with data: " + messageDataJs + " and targetOrigin: " + targetOrigin);
+
+    std::string js = WebMessageChannelJS::postWebMessageJs(messageDataJs, targetOrigin, portsJs);
+    debugLog("Evaluating JS: " + js);
     evaluateJavascript(js, ContentWorld::page(), nullptr);
   }
 
@@ -3454,6 +3499,16 @@ namespace flutter_inappwebview_plugin
   double InAppWebView::getZoomScale() const
   {
     return zoomScaleFactor_;
+  }
+
+  void InAppWebView::zoomBy(const double& zoomFactor)
+  {
+    if (!webViewController) {
+      return;
+    }
+
+    double newZoom = zoomScaleFactor_ * zoomFactor;
+    succeededOrLog(webViewController->put_ZoomFactor(newZoom));
   }
 
   int64_t InAppWebView::getProgress() const
