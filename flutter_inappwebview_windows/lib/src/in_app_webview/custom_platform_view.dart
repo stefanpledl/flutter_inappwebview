@@ -320,7 +320,9 @@ class _CustomPlatformViewState extends State<CustomPlatformView>
     _controller.initialize(
       onPlatformViewCreated: (id) {
         widget.onPlatformViewCreated?.call(id);
-        setState(() {});
+        if (mounted) {
+          setState(() {});
+        }
       },
       arguments: widget.creationParams,
     );
@@ -344,9 +346,10 @@ class _CustomPlatformViewState extends State<CustomPlatformView>
     });
 
     _cursorSubscription = _controller._cursor.listen((cursor) {
-      setState(() {
-        _cursor = cursor;
-      });
+      _cursor = cursor;
+      if (mounted) {
+        setState(() {});
+      }
     });
   }
 

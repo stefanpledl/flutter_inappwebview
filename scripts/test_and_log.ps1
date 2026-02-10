@@ -14,4 +14,4 @@ $TestScript = Join-Path $ScriptPath "test.ps1"
 
 Write-Host "Running tests and logging to $LogFile"
 
-& $TestScript -NodeServerIp $NodeServerIp -DeviceId $DeviceId 2>&1 | Tee-Object -FilePath $LogFile
+& $TestScript -NodeServerIp $NodeServerIp -DeviceId $DeviceId | Tee-Object -FilePath $LogFile

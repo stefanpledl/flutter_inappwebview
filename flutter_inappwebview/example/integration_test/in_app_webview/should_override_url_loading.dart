@@ -56,7 +56,7 @@ void shouldOverrideUrlLoading() {
 
     final shouldSkipTest2 = !NavigationType.LINK_ACTIVATED.isSupported();
     testWidgets(
-      'allow requests on iOS only if navigationType == NavigationType.LINK_ACTIVATED',
+      'allow requests only if navigationType == NavigationType.LINK_ACTIVATED',
       (WidgetTester tester) async {
         final Completer<InAppWebViewController> controllerCompleter =
             Completer<InAppWebViewController>();

@@ -114,22 +114,22 @@ void main() {
       }
     });
 
-    supported();
-    initialUrlRequest();
-    setGetSettings();
-    javascriptCodeEvaluation();
-    loadUrl();
-    loadFileUrl();
-    javascriptHandler();
-    resizeWebView();
-    setCustomUserAgent();
-    videoPlaybackPolicy();
-    audioPlaybackPolicy();
-    getTitle();
-    programmaticScroll();
-    shouldOverrideUrlLoading();
-    onReceivedError();
-    webViewWindows();
+    // supported();
+    // initialUrlRequest();
+    // setGetSettings();
+    // javascriptCodeEvaluation();
+    // loadUrl();
+    // loadFileUrl();
+    // javascriptHandler();
+    // resizeWebView();
+    // setCustomUserAgent();
+    // videoPlaybackPolicy();
+    // audioPlaybackPolicy();
+    // getTitle();
+    // programmaticScroll();
+    // shouldOverrideUrlLoading();
+    // onReceivedError();
+    // webViewWindows();
     interceptAjaxRequest();
     interceptFetchRequest();
     contentBlocker();

@@ -257,6 +257,7 @@ namespace flutter_inappwebview_plugin
     bool javaScriptBridgeEnabled = true;
     std::map<UINT64, std::shared_ptr<NavigationAction>> navigationActions_ = {};
     std::shared_ptr<NavigationAction> lastNavigationAction_;
+    std::map<std::string, std::string> pendingNavigationReasons_;
     bool isLoading_ = false;
     std::string pageFrameId_;
     std::map<std::string, std::pair<wil::com_ptr<ICoreWebView2DevToolsProtocolEventReceiver>, EventRegistrationToken>> devToolsProtocolEventListener_ = {};

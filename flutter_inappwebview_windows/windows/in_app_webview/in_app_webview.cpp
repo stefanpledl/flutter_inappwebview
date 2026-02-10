@@ -382,6 +382,29 @@ namespace flutter_inappwebview_plugin
       ).Get(), nullptr);
     failedLog(add_ZoomFactorChanged_HResult);
 
+    wil::com_ptr<ICoreWebView2DevToolsProtocolEventReceiver> frameRequestedNavReceiver;
+    if (succeededOrLog(webView->GetDevToolsProtocolEventReceiver(L"Page.frameRequestedNavigation", &frameRequestedNavReceiver))) {
+      frameRequestedNavReceiver->add_DevToolsProtocolEventReceived(
+        Callback<ICoreWebView2DevToolsProtocolEventReceivedEventHandler>(
+          [this](
+            ICoreWebView2* sender,
+            ICoreWebView2DevToolsProtocolEventReceivedEventArgs* args) -> HRESULT
+          {
+            wil::unique_cotaskmem_string json;
+            if (succeededOrLog(args->get_ParameterObjectAsJson(&json))) {
+              auto data = nlohmann::json::parse(wide_to_utf8(json.get()));
+              if (data.contains("frameId") && data.at("frameId").is_string() &&
+                  data.contains("reason") && data.at("reason").is_string()) {
+                auto navFrameId = data.at("frameId").get<std::string>();
+                auto reason = data.at("reason").get<std::string>();
+                pendingNavigationReasons_[navFrameId] = reason;
+              }
+            }
+            return S_OK;
+          })
+        .Get(), nullptr);
+    }
+
     wil::com_ptr<ICoreWebView2DevToolsProtocolEventReceiver> fetchRequestPausedEventReceiver;
     if (succeededOrLog(webView->GetDevToolsProtocolEventReceiver(L"Fetch.requestPaused", &fetchRequestPausedEventReceiver))) {
       auto add_DevToolsProtocolEventReceived_HResult = fetchRequestPausedEventReceiver->add_DevToolsProtocolEventReceived(
@@ -474,7 +497,26 @@ namespace flutter_inappwebview_plugin
 
                 BOOL isRedirect = redirectedRequestId.has_value() && !redirectedRequestId.value().empty();
 
-                std::optional<NavigationActionType> navigationType = isRedirect ? NavigationActionType::other : std::optional<NavigationActionType>{};
+                std::optional<NavigationActionType> navigationType;
+                if (isRedirect) {
+                  navigationType = NavigationActionType::other;
+                }
+                else if (map_contains(pendingNavigationReasons_, frameId)) {
+                  auto reason = pendingNavigationReasons_[frameId];
+                  pendingNavigationReasons_.erase(frameId);
+                  if (reason == "anchorClick") {
+                    navigationType = NavigationActionType::linkActivated;
+                  }
+                  else if (reason == "reload") {
+                    navigationType = NavigationActionType::reload;
+                  }
+                  else if (reason == "backForward") {
+                    navigationType = NavigationActionType::backForward;
+                  }
+                  else {
+                    navigationType = NavigationActionType::other;
+                  }
+                }
 
                 auto urlRequest = std::make_shared<URLRequest>(url, method, headers, body);
                 auto navigationAction = std::make_shared<NavigationAction>(
@@ -2307,9 +2349,10 @@ namespace flutter_inappwebview_plugin
               result = json["result"].contains("value") ? json["result"]["value"] : nlohmann::json{};
               if (json.contains("exceptionDetails")) {
                 nlohmann::json exceptionDetails = json["exceptionDetails"];
-                auto errorMessage = exceptionDetails.contains("exception") && exceptionDetails["exception"].contains("value")
-                  ? exceptionDetails["exception"]["value"].dump() :
-                  (result["value"].is_null() ? exceptionDetails["text"].get<std::string>() : result["value"].dump());
+                auto exceptionValue = exceptionDetails.contains("exception") && exceptionDetails["exception"].contains("value")
+                  ? exceptionDetails["exception"]["value"] :
+                  (result.is_null() ? nlohmann::json(exceptionDetails["text"].get<std::string>()) : result);
+                auto errorMessage = exceptionValue.is_string() ? exceptionValue.get<std::string>() : exceptionValue.dump();
                 result = nlohmann::json{};
                 debugLog(exceptionDetails.dump());
                 if (channelDelegate) {
@@ -2377,9 +2420,10 @@ namespace flutter_inappwebview_plugin
               result["value"] = json["result"].contains("value") ? json["result"]["value"] : nlohmann::json{};
               if (json.contains("exceptionDetails")) {
                 nlohmann::json exceptionDetails = json["exceptionDetails"];
-                auto errorMessage = exceptionDetails.contains("exception") && exceptionDetails["exception"].contains("value")
-                  ? exceptionDetails["exception"]["value"].dump() :
-                  (result["value"].is_null() ? exceptionDetails["text"].get<std::string>() : result["value"].dump());
+                auto exceptionValue = exceptionDetails.contains("exception") && exceptionDetails["exception"].contains("value")
+                  ? exceptionDetails["exception"]["value"] :
+                  (result["value"].is_null() ? nlohmann::json(exceptionDetails["text"].get<std::string>()) : result["value"]);
+                auto errorMessage = exceptionValue.is_string() ? exceptionValue.get<std::string>() : exceptionValue.dump();
                 result["value"] = nlohmann::json{};
                 result["error"] = errorMessage;
                 debugLog(exceptionDetails.dump());
@@ -4158,6 +4202,7 @@ namespace flutter_inappwebview_plugin
       findInteractionController.reset();
     }
     navigationActions_.clear();
+    pendingNavigationReasons_.clear();
     inAppBrowser = nullptr;
     plugin = nullptr;
   }

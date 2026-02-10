@@ -94,7 +94,7 @@ try {
     Push-Location (Join-Path $ProjectDir "flutter_inappwebview\example")
     
     Write-Host "Running Flutter Clean in example..."
-    flutter clean
+    # flutter clean
 
     $driverArgs = @("--driver=test_driver/integration_test.dart", "--target=integration_test/webview_flutter_test.dart")
     if (-not [string]::IsNullOrWhiteSpace($DeviceId)) {
@@ -103,7 +103,7 @@ try {
 
     Write-Host "Starting Flutter Driver Tests..."
     # Execute flutter driver directly
-    & flutter driver $driverArgs --verbose
+    flutter driver $driverArgs --verbose
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Integration tests passed successfully."

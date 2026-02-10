@@ -23,6 +23,7 @@ void supported() {
         [
           TargetPlatform.iOS,
           TargetPlatform.macOS,
+          TargetPlatform.windows,
         ].contains(defaultTargetPlatform),
       );
       expect(
