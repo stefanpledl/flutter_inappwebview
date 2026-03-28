@@ -244,12 +244,9 @@ public class InAppWebViewClient extends WebViewClient {
       inAppBrowserDelegate.didFinishNavigation(url);
     }
 
-    // WebView not storing cookies reliable to local device storage
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-      CookieManager.getInstance().flush();
-    } else {
-      CookieSyncManager.getInstance().sync();
-    }
+    // Removed CookieManager.flush() - it's synchronous I/O that causes ANR on
+    // Android WebView 134+ (Chromium bug 404563944). Cookies are persisted
+    // automatically in the background, so explicit flush is not needed.
 
     String js = JavaScriptBridgeJS.PLATFORM_READY_JS_SOURCE();
     webView.evaluateJavascript(js, (ValueCallback<String>) null);
